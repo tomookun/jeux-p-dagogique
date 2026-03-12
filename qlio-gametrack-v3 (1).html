@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QLIO GameTrack — Gestion des Jeux Pédagogiques</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --surface2: #f2ede8;
+  --border: #e0d5cc;
+  --accent: #F7941D;
+  --accent-dark: #d47b10;
+  --red: #E3231E;
+  --red-light: #fdecea;
+  --orange-light: #fff4e8;
+  --green: #2e9e5b;
+  --green-light: #edfbf3;
+  --text: #1a1008;
+  --text-dim: #7a6a58;
+  --text-muted: #b8a898;
+  --white: #ffffff;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'IBM Plex Sans',sans-serif; min-height:100vh; }
+*::-webkit-scrollbar { width:4px; height:4px; }
+*::-webkit-scrollbar-thumb { background:#d4c4b4; border-radius:2px; }
+*::-webkit-scrollbar-track { background:transparent; }
+
+/* HEADER */
+header {
+  background:var(--white);
+  border-bottom:2px solid var(--accent);
+  height:60px;
+  display:flex;
+  align-items:center;
+  padding:0 1.5rem;
+  gap:1rem;
+  position:sticky;
+  top:0;
+  z-index:50;
+  box-shadow:0 2px 16px rgba(247,148,29,.1);
+}
+.logo { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.logo-text { display:flex; flex-direction:column; line-height:1.15; margin-left:2px; }
+.logo-name { font-family:'Syne',sans-serif; font-weight:800; font-size:16px; color:var(--text); letter-spacing:-.3px; }
+.logo-name span { color:var(--accent); font-weight:400; }
+.logo-sub { font-size:9px; font-family:'IBM Plex Mono',monospace; color:var(--text-muted); letter-spacing:.8px; text-transform:uppercase; }
+
+.nav-tabs { display:flex; gap:2px; background:var(--surface2); border-radius:8px; padding:3px; }
+.ntab { padding:6px 16px; border-radius:6px; border:none; background:none; color:var(--text-dim); font-family:'Syne',sans-serif; font-weight:700; font-size:12px; cursor:pointer; transition:all .15s; display:flex; align-items:center; gap:6px; white-space:nowrap; }
+.ntab:hover { color:var(--accent); }
+.ntab.active { background:var(--white); color:var(--accent); box-shadow:0 1px 4px rgba(247,148,29,.18); }
+.nbadge { font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; font-family:'IBM Plex Mono',monospace; line-height:1.4; }
+.nbadge.orange { background:var(--accent); color:#fff; }
+.nbadge.red { background:var(--red); color:#fff; }
+.nbadge.green { background:var(--green); color:#fff; }
+
+.header-right { margin-left:auto; display:flex; gap:7px; align-items:center; }
+
+/* BUTTONS */
+.btn { padding:7px 15px; border-radius:5px; font-family:'IBM Plex Sans',sans-serif; font-size:12px; font-weight:500; cursor:pointer; border:1px solid var(--border); transition:all .15s; }
+.btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; }
+.btn-primary:hover { background:var(--accent-dark); }
+.btn-secondary { background:none; color:var(--text-dim); }
+.btn-secondary:hover { background:var(--surface2); color:var(--accent); border-color:var(--accent); }
+.btn-danger { background:none; color:var(--red); border-color:rgba(227,35,30,.25); }
+.btn-danger:hover { background:var(--red-light); }
+.btn-warn { background:none; color:var(--accent); border-color:rgba(247,148,29,.3); }
+.btn-warn:hover { background:var(--orange-light); }
+.btn-sm { padding:5px 11px; font-size:11px; }
+
+/* VIEWS */
+.view { display:none; padding:1.5rem 1.8rem; min-height:calc(100vh - 60px); animation:fadeUp .18s ease; }
+.view.active { display:block; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
+
+/* CARDS */
+.card { background:var(--white); border:1px solid var(--border); border-radius:10px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+.card-head { padding:10px 15px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--surface2); }
+.card-head h3 { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; display:flex; align-items:center; gap:7px; }
+.card-head h3::before { content:''; width:3px; height:12px; background:var(--accent); border-radius:2px; display:block; }
+.card-body { padding:13px; }
+
+/* STATUS DOT */
+.dot { width:7px; height:7px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.dot.available { background:var(--green); box-shadow:0 0 5px rgba(46,158,91,.4); }
+.dot.in-use { background:var(--accent); box-shadow:0 0 5px rgba(247,148,29,.4); }
+.dot.unavailable { background:var(--red); box-shadow:0 0 5px rgba(227,35,30,.35); }
+
+/* CATEGORY BADGES */
+.cat { font-size:10px; font-family:'IBM Plex Mono',monospace; padding:2px 7px; border-radius:2px; letter-spacing:.5px; text-transform:uppercase; }
+.catQ { background:#fff0f0; color:var(--red); border:1px solid rgba(227,35,30,.2); }
+.catL { background:var(--orange-light); color:var(--accent); border:1px solid rgba(247,148,29,.3); }
+.catO { background:var(--green-light); color:var(--green); border:1px solid rgba(46,158,91,.25); }
+.catI { background:var(--orange-light); color:#c45a00; border:1px solid rgba(196,90,0,.25); }
+
+/* FORMS */
+.fg { margin-bottom:10px; }
+.fg label { display:block; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin-bottom:5px; font-family:'IBM Plex Mono',monospace; }
+.fg input,.fg select,.fg textarea { width:100%; background:var(--white); border:1.5px solid var(--border); border-radius:6px; color:var(--text); font-family:'IBM Plex Sans',sans-serif; font-size:13px; padding:8px 11px; outline:none; transition:border-color .15s; }
+.fg input:focus,.fg select:focus,.fg textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(247,148,29,.1); }
+.fg select option { background:var(--white); }
+.fg textarea { resize:vertical; min-height:70px; }
+.fg2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.fg2 .s2 { grid-column:1/-1; }
+
+/* MODAL OVERLAY */
+.overlay { display:none; position:fixed; inset:0; background:rgba(26,16,8,.55); backdrop-filter:blur(4px); z-index:200; align-items:center; justify-content:center; }
+.overlay.open { display:flex; }
+.modal { background:var(--white); border:1px solid var(--border); border-radius:12px; padding:1.5rem; width:560px; max-width:95vw; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.13); }
+.modal h2 { font-family:'Syne',sans-serif; font-size:18px; font-weight:800; margin-bottom:1.2rem; color:var(--text); }
+.modal-foot { display:flex; gap:8px; justify-content:flex-end; margin-top:1.2rem; padding-top:1rem; border-top:1px solid var(--border); }
+
+/* JEUX LAYOUT */
+.jeux-layout { display:flex; gap:1.25rem; height:calc(100vh - 60px - 3rem); }
+.jeux-sidebar { width:265px; flex-shrink:0; display:flex; flex-direction:column; gap:9px; }
+.search-box { display:flex; align-items:center; gap:8px; background:var(--white); border:1.5px solid var(--border); border-radius:8px; padding:8px 11px; }
+.search-box input { background:none; border:none; color:var(--text); font-family:'IBM Plex Sans',sans-serif; font-size:13px; outline:none; width:100%; }
+.search-box input::placeholder { color:var(--text-muted); }
+.filter-box { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:11px; }
+.filter-label { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px; font-family:'IBM Plex Mono',monospace; }
+.chips { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:9px; }
+.chip { font-size:11px; font-family:'IBM Plex Mono',monospace; padding:3px 9px; border-radius:3px; border:1px solid var(--border); background:none; color:var(--text-dim); cursor:pointer; transition:all .15s; }
+.chip:hover { border-color:var(--accent); color:var(--accent); background:var(--orange-light); }
+.chip.on { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600; }
+.game-list { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:2px; }
+.g-item { padding:10px 12px; border-radius:6px; cursor:pointer; border:1px solid transparent; transition:all .15s; }
+.g-item:hover { background:var(--orange-light); border-color:rgba(247,148,29,.25); }
+.g-item.sel { background:var(--orange-light); border-color:var(--accent); }
+.gi-name { font-family:'Syne',sans-serif; font-weight:600; font-size:13px; margin-bottom:3px; display:flex; align-items:center; gap:6px; }
+.gi-meta { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; flex-wrap:wrap; }
+.inc-flag { font-size:10px; color:var(--red); }
+
+/* GAME DETAIL */
+.game-detail { flex:1; overflow-y:auto; }
+.detail-hero { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.2rem; padding-bottom:1.1rem; border-bottom:1px solid var(--border); }
+.detail-hero h1 { font-family:'Syne',sans-serif; font-size:23px; font-weight:800; letter-spacing:-.5px; margin-bottom:5px; }
+.detail-meta { font-size:11px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; display:flex; gap:9px; flex-wrap:wrap; align-items:center; }
+.detail-acts { display:flex; gap:6px; flex-shrink:0; flex-wrap:wrap; }
+.info-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:1.2rem; }
+.ip { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:10px 13px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+.ip-l { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-muted); margin-bottom:3px; font-family:'IBM Plex Mono',monospace; }
+.ip-v { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; }
+.dg { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+.dg .full { grid-column:1/-1; }
+
+/* DETAIL TABS */
+.dtabs { display:flex; gap:2px; margin-bottom:1.2rem; border-bottom:2px solid var(--border); }
+.dtab { padding:7px 14px; background:none; border:none; color:var(--text-dim); font-family:'IBM Plex Sans',sans-serif; font-size:12px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all .15s; position:relative; font-weight:500; }
+.dtab:hover { color:var(--accent); }
+.dtab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.dtab-badge { position:absolute; top:3px; right:3px; background:var(--red); color:#fff; font-size:8px; width:13px; height:13px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; }
+.tab-pane { display:none; }
+.tab-pane.active { display:block; }
+
+/* INVENTORY */
+.inv-row { display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.inv-row:last-child { border-bottom:none; }
+.inv-l { display:flex; align-items:center; gap:8px; }
+.inv-q { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--accent); background:var(--orange-light); padding:2px 7px; border-radius:3px; font-weight:600; border:1px solid rgba(247,148,29,.2); }
+.inv-q.missing { color:var(--red); background:var(--red-light); border-color:rgba(227,35,30,.2); }
+
+/* RULES */
+.rules-ul { list-style:none; }
+.rules-ul li { padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; color:var(--text-dim); line-height:1.5; display:flex; gap:8px; }
+.rules-ul li:last-child { border-bottom:none; }
+.rules-ul li::before { content:'→'; color:var(--red); font-family:'IBM Plex Mono',monospace; flex-shrink:0; }
+
+/* PROFESSOR */
+.prof-row { display:flex; align-items:center; gap:10px; padding:8px; background:var(--orange-light); border-radius:6px; margin-bottom:5px; border:1px solid rgba(247,148,29,.15); }
+.pav { width:33px; height:33px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--red)); display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-weight:800; font-size:12px; color:#000; flex-shrink:0; }
+.pname { font-size:13px; font-weight:500; color:var(--text); }
+.prole { font-size:10px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; }
+.pemail { font-size:11px; color:var(--red); font-family:'IBM Plex Mono',monospace; }
+
+/* DOCUMENTS */
+.doc-row { display:flex; align-items:center; gap:8px; padding:8px; background:var(--surface2); border-radius:5px; margin-bottom:5px; font-size:13px; cursor:pointer; border:1px solid transparent; transition:border .15s; }
+.doc-row:hover { border-color:var(--border); }
+.doc-sz { font-size:11px; color:var(--text-muted); font-family:'IBM Plex Mono',monospace; margin-left:auto; }
+.doc-del { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:12px; padding:0 3px; }
+.doc-del:hover { color:var(--red); }
+.doc-upload { border:1.5px dashed var(--border); border-radius:8px; padding:14px; text-align:center; cursor:pointer; transition:all .15s; margin-top:7px; background:var(--surface2); }
+.doc-upload:hover { border-color:var(--accent); background:var(--orange-light); }
+
+/* INCIDENTS */
+.inc-item { border-radius:6px; padding:11px; margin-bottom:7px; border:1px solid; }
+.inc-item.danger { background:var(--red-light); border-color:rgba(227,35,30,.25); }
+.inc-item.warn { background:var(--orange-light); border-color:rgba(247,148,29,.3); }
+.inc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
+.inc-type { font-size:10px; font-family:'IBM Plex Mono',monospace; letter-spacing:1px; text-transform:uppercase; font-weight:600; }
+.inc-type.danger { color:var(--red); }
+.inc-type.warn { color:var(--accent); }
+.inc-date { font-size:10px; color:var(--text-muted); font-family:'IBM Plex Mono',monospace; }
+.inc-desc { font-size:12px; color:var(--text-dim); line-height:1.5; }
+.inc-reporter { font-size:10px; color:var(--text-muted); margin-top:3px; font-family:'IBM Plex Mono',monospace; }
+
+/* EMPTY */
+.empty-panel { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--text-muted); gap:10px; text-align:center; padding:2rem; }
+.empty-panel .bi { font-size:48px; opacity:.15; }
+.empty-panel h3 { font-family:'Syne',sans-serif; font-size:17px; color:var(--accent); }
+.empty-panel p { font-size:13px; max-width:230px; line-height:1.6; color:var(--text-dim); }
+
+/* PLANNING */
+.plan-top { display:flex; align-items:center; gap:1rem; margin-bottom:1.2rem; flex-wrap:wrap; }
+.plan-top h1 { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; }
+.plan-top h1 span { color:var(--accent); }
+.month-nav { display:flex; align-items:center; gap:6px; margin-left:auto; }
+.month-nav button { background:var(--white); border:1px solid var(--border); color:var(--text); border-radius:4px; padding:5px 11px; cursor:pointer; font-size:13px; transition:all .15s; }
+.month-nav button:hover { border-color:var(--accent); color:var(--accent); background:var(--orange-light); }
+.month-lbl { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; min-width:120px; text-align:center; }
+.big-cal { background:var(--white); border:1px solid var(--border); border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+.cal-wdays { display:grid; grid-template-columns:repeat(7,1fr); border-bottom:1px solid var(--border); }
+.cal-wd { padding:8px; text-align:center; font-size:10px; font-family:'IBM Plex Mono',monospace; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase; }
+.cal-cells { display:grid; grid-template-columns:repeat(7,1fr); }
+.cal-cell { min-height:95px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:6px; transition:background .12s; }
+.cal-cell:hover { background:var(--orange-light); }
+.cal-cell.empty { background:#f7f3ef; }
+.cal-cell:nth-child(7n) { border-right:none; }
+.cal-dn { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-dim); margin-bottom:3px; display:flex; align-items:center; gap:3px; }
+.cal-dn.tnow { color:var(--accent); font-weight:700; }
+.tnow-pip { width:5px; height:5px; background:var(--accent); border-radius:50%; }
+.bchip { font-size:10px; font-family:'IBM Plex Mono',monospace; padding:2px 5px; border-radius:3px; margin-bottom:2px; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; border-left:2px solid; transition:opacity .12s; display:block; }
+.bchip:hover { opacity:.7; }
+.bc0 { background:var(--orange-light); color:var(--accent); border-color:var(--accent); }
+.bc1 { background:var(--red-light); color:var(--red); border-color:var(--red); }
+.bc2 { background:var(--green-light); color:var(--green); border-color:var(--green); }
+.bc3 { background:var(--orange-light); color:#c45a00; border-color:#c45a00; }
+.bc4 { background:#fff9e8; color:#a07000; border-color:#a07000; }
+.legend { display:flex; gap:12px; flex-wrap:wrap; margin-top:9px; }
+.leg-it { display:flex; align-items:center; gap:5px; font-size:11px; font-family:'IBM Plex Mono',monospace; color:var(--text-dim); }
+.leg-sq { width:8px; height:8px; border-radius:2px; }
+.plan-list { display:flex; flex-direction:column; gap:6px; margin-top:1.2rem; }
+.plan-row { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:10px 13px; display:flex; align-items:center; gap:10px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+.pdb { background:var(--orange-light); border-radius:6px; padding:5px 9px; text-align:center; flex-shrink:0; min-width:46px; border:1px solid rgba(247,148,29,.2); }
+.pdb .pday { font-family:'Syne',sans-serif; font-weight:800; font-size:18px; line-height:1; }
+.pdb .pmo { font-size:9px; font-family:'IBM Plex Mono',monospace; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; }
+.pinfo { flex:1; }
+.pgame { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; margin-bottom:2px; }
+.pdet { font-size:11px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; display:flex; gap:8px; flex-wrap:wrap; }
+.sec-title { font-family:'Syne',sans-serif; font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent); margin:1.2rem 0 .6rem; display:flex; align-items:center; gap:8px; }
+.sec-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* PROFESSORS TAB */
+.profs-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(310px,1fr)); gap:13px; }
+.pcard { background:var(--white); border:1px solid var(--border); border-radius:10px; overflow:hidden; transition:all .15s; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+.pcard:hover { border-color:var(--accent); box-shadow:0 4px 16px rgba(247,148,29,.12); transform:translateY(-1px); }
+.pcard-top { padding:13px 15px; display:flex; align-items:center; gap:11px; border-bottom:1px solid var(--border); background:var(--surface2); }
+.pav2 { width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--red)); display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-weight:800; font-size:14px; color:#000; flex-shrink:0; }
+.pc-name { font-family:'Syne',sans-serif; font-weight:700; font-size:14px; margin-bottom:1px; }
+.pc-email { font-size:11px; color:var(--red); font-family:'IBM Plex Mono',monospace; }
+.pc-sub { font-size:10px; font-family:'IBM Plex Mono',monospace; color:var(--text-muted); margin-top:3px; }
+.pcard-body { padding:12px 14px; }
+.pc-sec { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-muted); font-family:'IBM Plex Mono',monospace; margin-bottom:6px; }
+.gtag { display:inline-flex; align-items:center; gap:5px; background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:3px 8px; font-size:11px; margin:0 3px 3px 0; cursor:pointer; transition:all .15s; }
+.gtag:hover { border-color:var(--accent); background:var(--orange-light); color:var(--accent); }
+.brow { display:flex; align-items:center; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.brow:last-child { border-bottom:none; }
+.brow-d { font-family:'IBM Plex Mono',monospace; color:var(--text-dim); font-size:11px; }
+
+/* NOTIFICATIONS */
+.notif-item { display:flex; gap:11px; padding:13px 15px; background:var(--white); border:1px solid var(--border); border-radius:8px; margin-bottom:5px; align-items:flex-start; }
+.notif-item.unread { border-color:rgba(247,148,29,.35); background:var(--orange-light); }
+.notif-item.danger { border-color:rgba(227,35,30,.25); background:var(--red-light); }
+.notif-icon { font-size:18px; flex-shrink:0; margin-top:1px; }
+.notif-content { flex:1; }
+.notif-title { font-weight:600; font-size:13px; margin-bottom:2px; }
+.notif-desc { font-size:12px; color:var(--text-dim); line-height:1.5; }
+.notif-time { font-size:10px; color:var(--text-muted); font-family:'IBM Plex Mono',monospace; margin-top:3px; }
+.notif-unread-dot { width:7px; height:7px; border-radius:50%; background:var(--accent); flex-shrink:0; margin-top:5px; }
+
+/* CHATBOT */
+#chatBtn { position:fixed; bottom:26px; right:26px; width:50px; height:50px; border-radius:50%; background:var(--accent); border:none; cursor:pointer; font-size:20px; box-shadow:0 4px 18px rgba(247,148,29,.4); z-index:300; transition:transform .15s; color:#fff; display:flex; align-items:center; justify-content:center; }
+#chatBtn:hover { transform:scale(1.07); }
+#chatPanel { position:fixed; bottom:88px; right:26px; width:350px; height:500px; background:var(--white); border:1px solid var(--border); border-radius:14px; display:none; flex-direction:column; z-index:300; box-shadow:0 12px 48px rgba(0,0,0,.15); overflow:hidden; }
+#chatPanel.open { display:flex; animation:fadeUp .2s ease; }
+.chat-hd { padding:12px 15px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:9px; background:linear-gradient(135deg,var(--accent),var(--red)); }
+.chat-hd-av { width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-size:15px; }
+.chat-hd-name { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; color:#fff; }
+.chat-hd-st { font-size:10px; color:rgba(255,255,255,.8); font-family:'IBM Plex Mono',monospace; display:flex; align-items:center; gap:3px; }
+.chat-hd-st::before { content:''; width:5px; height:5px; background:rgba(255,255,255,.9); border-radius:50%; display:block; }
+.chat-ctx { padding:6px 13px; background:var(--orange-light); border-bottom:1px solid var(--border); font-size:11px; color:var(--accent); font-family:'IBM Plex Mono',monospace; }
+#chatMsgs { flex:1; overflow-y:auto; padding:11px; display:flex; flex-direction:column; gap:8px; }
+.msg { max-width:83%; display:flex; flex-direction:column; gap:2px; }
+.msg.bot { align-self:flex-start; }
+.msg.user { align-self:flex-end; }
+.msg-b { padding:8px 12px; border-radius:11px; font-size:13px; line-height:1.5; }
+.msg.bot .msg-b { background:var(--surface2); border:1px solid var(--border); color:var(--text); border-bottom-left-radius:3px; }
+.msg.user .msg-b { background:var(--accent); color:#fff; font-weight:600; border-bottom-right-radius:3px; }
+.msg-t { font-size:10px; font-family:'IBM Plex Mono',monospace; color:var(--text-muted); padding:0 3px; }
+.msg.user .msg-t { text-align:right; }
+.report-pre { background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:9px; margin-top:7px; font-family:'IBM Plex Mono',monospace; font-size:10px; line-height:1.6; white-space:pre-wrap; color:var(--text-dim); max-height:180px; overflow-y:auto; }
+.sugs { display:flex; flex-wrap:wrap; gap:4px; padding:0 11px 7px; }
+.sug { font-size:11px; font-family:'IBM Plex Mono',monospace; padding:3px 9px; border-radius:10px; border:1px solid rgba(247,148,29,.35); background:var(--orange-light); color:var(--accent); cursor:pointer; transition:all .15s; white-space:nowrap; }
+.sug:hover { background:rgba(247,148,29,.2); }
+.chat-in { padding:9px 11px; border-top:1px solid var(--border); display:flex; gap:6px; align-items:flex-end; }
+#cInput { flex:1; background:var(--white); border:1.5px solid var(--border); border-radius:7px; color:var(--text); font-family:'IBM Plex Sans',sans-serif; font-size:13px; padding:7px 10px; outline:none; resize:none; max-height:70px; min-height:32px; transition:border-color .15s; }
+#cInput:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(247,148,29,.1); }
+#cSend { background:var(--accent); border:none; border-radius:7px; width:32px; height:32px; cursor:pointer; font-size:14px; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; }
+#cSend:hover { background:var(--accent-dark); }
+.td { width:5px; height:5px; background:var(--accent); border-radius:50%; animation:tb 1.2s infinite; display:inline-block; }
+.td:nth-child(2){animation-delay:.2s}.td:nth-child(3){animation-delay:.4s}
+@keyframes tb{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+/* TOAST */
+.toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%); padding:8px 18px; border-radius:5px; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; z-index:999; animation:fadeUp .2s ease; white-space:nowrap; }
+
+/* STAT CARDS */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:1.5rem; }
+.stat-card { background:var(--white); border:1px solid var(--border); border-radius:10px; padding:16px; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+.stat-l { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-muted); margin-bottom:7px; font-family:'IBM Plex Mono',monospace; }
+.stat-v { font-family:'Syne',sans-serif; font-size:30px; font-weight:800; line-height:1; margin-bottom:3px; }
+.stat-s { font-size:11px; color:var(--text-dim); }
+.activity-row { display:flex; align-items:center; gap:10px; padding:10px 13px; background:var(--white); border:1px solid var(--border); border-radius:7px; margin-bottom:5px; }
+.activity-text { flex:1; font-size:13px; color:var(--text); }
+.activity-text strong { color:var(--accent); }
+.activity-time { font-size:10px; color:var(--text-muted); font-family:'IBM Plex Mono',monospace; }
+
+/* INV EDIT ROWS */
+.inv-edit-row { display:flex; gap:6px; align-items:center; margin-bottom:5px; }
+.inv-edit-row input { background:var(--surface2); border:1px solid var(--border); border-radius:4px; color:var(--text); padding:6px 9px; font-size:13px; outline:none; transition:border-color .15s; }
+.inv-edit-row input:focus { border-color:var(--accent); }
+.prof-edit-row { display:grid; grid-template-columns:1fr 1fr auto; gap:6px; align-items:center; margin-bottom:5px; }
+.prof-edit-row input { background:var(--surface2); border:1px solid var(--border); border-radius:4px; color:var(--text); padding:6px 9px; font-size:13px; outline:none; }
+.prof-edit-row input:focus { border-color:var(--accent); }
+.add-row-btn { display:inline-flex; align-items:center; gap:4px; background:var(--orange-light); border:1px solid rgba(247,148,29,.4); color:var(--accent); border-radius:4px; padding:3px 10px; cursor:pointer; font-size:11px; font-family:'IBM Plex Mono',monospace; font-weight:600; transition:all .15s; }
+.add-row-btn:hover { background:rgba(247,148,29,.2); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg width="108" height="42" viewBox="0 0 108 42" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="15" cy="17" r="13" fill="#F7941D"/>
+      <circle cx="15" cy="17" r="6.5" fill="white"/>
+      <path d="M19 24.5 L15 33 L25 29 Z" fill="#E3231E"/>
+      <path d="M7.5 29 Q9.5 35 19 33 L15 25 Q9.5 27 7.5 29Z" fill="#E3231E"/>
+      <rect x="32" y="4" width="5.5" height="26" rx="1" fill="#F7941D"/>
+      <rect x="32" y="26" width="13" height="4.5" rx="1" fill="#E3231E"/>
+      <rect x="50" y="4" width="5.5" height="26" rx="1" fill="#F7941D"/>
+      <path d="M76 15 A12 12 0 1 0 88 21" stroke="#E3231E" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M76 15 A12 12 0 0 1 88 21" stroke="#F7941D" stroke-width="5" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div class="logo-text">
+      <span class="logo-name">Game<span>Track</span></span>
+      <span class="logo-sub">IUT · Jeux pédagogiques</span>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="ntab active" onclick="goTab('dashboard')" id="tab-dashboard">📊 Tableau de bord</button>
+    <button class="ntab" onclick="goTab('jeux')" id="tab-jeux">🎲 Jeux <span class="nbadge orange" id="bdg-jeux">0</span></button>
+    <button class="ntab" onclick="goTab('planning')" id="tab-planning">📅 Planning <span class="nbadge red" id="bdg-plan">0</span></button>
+    <button class="ntab" onclick="goTab('profs')" id="tab-profs">👩‍🏫 Professeurs <span class="nbadge orange" id="bdg-profs">0</span></button>
+    <button class="ntab" onclick="goTab('notifications')" id="tab-notifications">🔔 Alertes <span class="nbadge red" id="bdg-notif">3</span></button>
+  </div>
+
+  <div class="header-right">
+    <button class="btn btn-secondary btn-sm" onclick="openBookingModal()">📅 Réservation</button>
+    <button class="btn btn-secondary btn-sm" onclick="openM('mAddProf')">+ Professeur</button>
+    <button class="btn btn-primary btn-sm" onclick="openAddGame()">+ Nouveau jeu</button>
+  </div>
+</header>
+
+<!-- DASHBOARD -->
+<div class="view active" id="view-dashboard">
+  <div class="stats-row" id="dashStats"></div>
+  <div class="sec-title">Activité récente</div>
+  <div id="activityList" style="margin-bottom:1.5rem"></div>
+  <div class="sec-title">Jeux les plus utilisés</div>
+  <div id="topGames"></div>
+</div>
+
+<!-- JEUX -->
+<div class="view" id="view-jeux">
+  <div class="jeux-layout">
+    <div class="jeux-sidebar">
+      <div class="search-box">
+        <span style="color:var(--text-muted)">⌕</span>
+        <input type="text" placeholder="Rechercher un jeu..." id="sInput" oninput="renderSidebar()">
+      </div>
+      <div class="filter-box">
+        <div class="filter-label">Catégorie</div>
+        <div class="chips" id="catChips">
+          <button class="chip on" onclick="setCat(this,'all')">Tous</button>
+          <button class="chip" onclick="setCat(this,'Qualite')">Qualité</button>
+          <button class="chip" onclick="setCat(this,'Logistique')">Logistique</button>
+          <button class="chip" onclick="setCat(this,'Organisation')">Organisation</button>
+          <button class="chip" onclick="setCat(this,'Industrie')">Industrie</button>
+        </div>
+        <div class="filter-label">Statut</div>
+        <div class="chips" id="stChips">
+          <button class="chip on" onclick="setSt(this,'all')">Tous</button>
+          <button class="chip" onclick="setSt(this,'available')">Disponible</button>
+          <button class="chip" onclick="setSt(this,'in-use')">En cours</button>
+          <button class="chip" onclick="setSt(this,'unavailable')">Indispo</button>
+        </div>
+      </div>
+      <div class="game-list" id="gameSidebar"></div>
+    </div>
+    <div class="game-detail" id="gameDetail">
+      <div class="empty-panel">
+        <div class="bi">🎲</div>
+        <h3>Sélectionner un jeu</h3>
+        <p>Cliquez sur un jeu dans la liste pour voir sa fiche complète.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PLANNING -->
+<div class="view" id="view-planning">
+  <div class="plan-top">
+    <div>
+      <h1>Planning <span id="planTitle">Mars 2025</span></h1>
+      <div style="font-size:12px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;margin-top:2px">Réservations et disponibilité des jeux</div>
+    </div>
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">◀</button>
+      <div class="month-lbl" id="monthLbl">Mars 2025</div>
+      <button onclick="changeMonth(1)">▶</button>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openBookingModal()">+ Réservation</button>
+  </div>
+  <div class="big-cal">
+    <div class="cal-wdays">
+      <div class="cal-wd">Lun</div><div class="cal-wd">Mar</div><div class="cal-wd">Mer</div>
+      <div class="cal-wd">Jeu</div><div class="cal-wd">Ven</div>
+      <div class="cal-wd" style="opacity:.4">Sam</div><div class="cal-wd" style="opacity:.4">Dim</div>
+    </div>
+    <div class="cal-cells" id="calCells"></div>
+  </div>
+  <div class="legend" id="calLegend"></div>
+  <div class="sec-title">Toutes les réservations du mois</div>
+  <div class="plan-list" id="planList"></div>
+</div>
+
+<!-- PROFESSEURS -->
+<div class="view" id="view-profs">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:9px">
+    <div>
+      <h1 style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800">Professeurs <span style="color:var(--red)">responsables</span></h1>
+      <div style="font-size:12px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;margin-top:2px">Jeux en charge et réservations</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="search-box" style="width:190px">
+        <span style="color:var(--text-muted)">⌕</span>
+        <input type="text" placeholder="Chercher..." id="profSearch" oninput="renderProfs()">
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openM('mAddProf')">+ Ajouter</button>
+    </div>
+  </div>
+  <div class="profs-grid" id="profsGrid"></div>
+</div>
+
+<!-- NOTIFICATIONS -->
+<div class="view" id="view-notifications">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
+    <div>
+      <h1 style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800">Notifications <span style="color:var(--red)">& Alertes</span></h1>
+      <div style="font-size:12px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;margin-top:2px">Échéances, incidents et rappels</div>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="markAllRead()">Tout marquer lu</button>
+  </div>
+  <div id="notifList"></div>
+</div>
+
+<!-- MODAL AJOUTER JEU -->
+<div class="overlay" id="mAddGame">
+  <div class="modal" style="width:620px">
+    <h2>🎲 Nouveau jeu pédagogique</h2>
+    <div class="fg2">
+      <div class="fg s2"><label>Nom du jeu</label><input type="text" id="ag-name" placeholder="ex: Lean Factory Simulator"></div>
+      <div class="fg"><label>Catégorie</label><select id="ag-cat"><option value="Qualite">Qualité</option><option value="Logistique">Logistique</option><option value="Organisation">Organisation</option><option value="Industrie">Industrie</option></select></div>
+      <div class="fg"><label>Statut</label><select id="ag-st"><option value="available">Disponible</option><option value="in-use">En utilisation</option><option value="unavailable">Indisponible</option></select></div>
+      <div class="fg"><label>Localisation</label><input type="text" id="ag-loc" placeholder="ex: Salle B202"></div>
+      <div class="fg"><label>Nb joueurs</label><input type="text" id="ag-pl" placeholder="ex: 4-16"></div>
+      <div class="fg"><label>Durée</label><input type="text" id="ag-dur" placeholder="ex: 2h30"></div>
+      <div class="fg s2"><label>Description</label><textarea id="ag-desc" placeholder="Objectif pédagogique..."></textarea></div>
+      <div class="fg s2"><label>Règles (une par ligne)</label><textarea id="ag-rules" style="min-height:60px" placeholder="Règle 1&#10;Règle 2"></textarea></div>
+      <div class="fg"><label>Nom professeur</label><input type="text" id="ag-pname" placeholder="Nom Prénom"></div>
+      <div class="fg"><label>Email professeur</label><input type="email" id="ag-pemail" placeholder="prenom.nom@iut.fr"></div>
+      <div class="fg s2"><label>Inventaire (Nom x Quantité, une ligne par article)</label><textarea id="ag-inv" style="min-height:60px" placeholder="Plateau de jeu x1&#10;Cartes x48"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeM('mAddGame')">Annuler</button>
+      <button class="btn btn-primary" onclick="addGame()">Enregistrer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MODIFIER JEU -->
+<div class="overlay" id="mEditGame">
+  <div class="modal" style="width:640px">
+    <h2>✏️ Modifier <span id="edit-ttl" style="color:var(--accent)"></span></h2>
+    <div class="fg2">
+      <div class="fg s2"><label>Nom du jeu</label><input type="text" id="eg-name"></div>
+      <div class="fg"><label>Catégorie</label><select id="eg-cat"><option value="Qualite">Qualité</option><option value="Logistique">Logistique</option><option value="Organisation">Organisation</option><option value="Industrie">Industrie</option></select></div>
+      <div class="fg"><label>Statut</label><select id="eg-st"><option value="available">Disponible</option><option value="in-use">En utilisation</option><option value="unavailable">Indisponible</option></select></div>
+      <div class="fg"><label>Localisation</label><input type="text" id="eg-loc"></div>
+      <div class="fg"><label>Nb joueurs</label><input type="text" id="eg-pl"></div>
+      <div class="fg"><label>Durée</label><input type="text" id="eg-dur"></div>
+      <div class="fg s2"><label>Description</label><textarea id="eg-desc"></textarea></div>
+      <div class="fg s2"><label>Règles (une par ligne)</label><textarea id="eg-rules" style="min-height:70px"></textarea></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:9px 0 5px">
+      <div class="filter-label" style="margin:0">Inventaire</div>
+      <button class="add-row-btn" onclick="addInvRow()">+ Ajouter</button>
+    </div>
+    <div id="invEd"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:9px 0 5px">
+      <div class="filter-label" style="margin:0">Professeurs</div>
+      <button class="add-row-btn" onclick="addProfRow()">+ Ajouter</button>
+    </div>
+    <div id="profEd"></div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeM('mEditGame')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Enregistrer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RÉSERVATION -->
+<div class="overlay" id="mBooking">
+  <div class="modal">
+    <h2>📅 Nouvelle réservation</h2>
+    <div class="fg"><label>Jeu</label><select id="bk-game" onchange="updateBkProf()"></select></div>
+    <div class="fg"><label>Professeur</label><select id="bk-prof"></select></div>
+    <div class="fg2">
+      <div class="fg"><label>Date de début</label><input type="date" id="bk-start"></div>
+      <div class="fg"><label>Date de fin</label><input type="date" id="bk-end"></div>
+    </div>
+    <div class="fg"><label>Groupe / Classe</label><input type="text" id="bk-grp" placeholder="ex: LP QLIO A – 24 étudiants"></div>
+    <div class="fg"><label>Salle</label><input type="text" id="bk-room" placeholder="ex: Salle B202"></div>
+    <div class="fg"><label>Notes</label><textarea id="bk-notes" placeholder="Informations complémentaires..."></textarea></div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeM('mBooking')">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmBooking()">Confirmer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INCIDENT -->
+<div class="overlay" id="mIncident">
+  <div class="modal">
+    <h2>⚠️ Signaler un incident</h2>
+    <input type="hidden" id="inc-gid">
+    <div class="fg"><label>Type d'incident</label>
+      <select id="inc-type">
+        <option value="missing">Pièce(s) manquante(s)</option>
+        <option value="damage">Élément endommagé</option>
+        <option value="missing_doc">Document manquant</option>
+        <option value="other">Autre problème</option>
+      </select>
+    </div>
+    <div class="fg"><label>Description</label><textarea id="inc-desc" placeholder="Décrivez précisément le problème..."></textarea></div>
+    <div class="fg"><label>Signalé par</label><input type="text" id="inc-reporter" placeholder="Votre nom"></div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeM('mIncident')">Annuler</button>
+      <button class="btn btn-warn" onclick="confirmIncident()">Signaler →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AJOUTER PROF -->
+<div class="overlay" id="mAddProf">
+  <div class="modal">
+    <h2>👤 Nouveau professeur</h2>
+    <div class="fg"><label>Nom complet</label><input type="text" id="np-name" placeholder="Prénom Nom"></div>
+    <div class="fg"><label>Email</label><input type="email" id="np-email" placeholder="prenom.nom@iut.fr"></div>
+    <div class="fg"><label>Spécialité</label><input type="text" id="np-spec" placeholder="ex: Lean / Qualité ISO / Logistique"></div>
+    <div class="fg"><label>Téléphone</label><input type="text" id="np-phone" placeholder="06 XX XX XX XX"></div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeM('mAddProf')">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmAddProf()">Ajouter →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MAIL -->
+<div class="overlay" id="mMail">
+  <div class="modal">
+    <h2>📧 Envoyer le rapport</h2>
+    <div class="fg"><label>Destinataire(s)</label><input type="email" id="mail-to" placeholder="prof@iut.fr, direction@iut.fr"></div>
+    <div class="fg"><label>Objet</label><input type="text" id="mail-subj"></div>
+    <div class="fg"><label>Corps du mail</label><textarea id="mail-body" style="min-height:160px"></textarea></div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeM('mMail')">Annuler</button>
+      <button class="btn btn-primary" onclick="sendMail()">Envoyer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHATBOT -->
+<button id="chatBtn" onclick="toggleChat()">💬</button>
+<div id="chatPanel">
+  <div class="chat-hd">
+    <div class="chat-hd-av">🤖</div>
+    <div style="flex:1">
+      <div class="chat-hd-name">Assistant QLIO</div>
+      <div class="chat-hd-st">Retour d'expérience</div>
+    </div>
+    <button onclick="toggleChat()" style="background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;font-size:15px;line-height:1">✕</button>
+  </div>
+  <div id="chatCtx" class="chat-ctx">Assistant retour d'expérience</div>
+  <div id="chatMsgs"></div>
+  <div class="sugs" id="chatSugs"></div>
+  <div class="chat-in">
+    <textarea id="cInput" placeholder="Posez votre question..." rows="1"></textarea>
+    <button id="cSend" onclick="sendChat()">➤</button>
+  </div>
+</div>
+
+<input type="file" id="docFileInput" multiple accept=".pdf,.xlsx,.xls,.docx,.doc,.pptx,.ppt,.png,.jpg,.jpeg" style="display:none">
+
+<script>
+// ══ DATA ══
+var games = [
+  {id:1,name:"Lean Factory",category:"Industrie",status:"available",location:"Salle B202",players:"6-20",duration:"3h",
+   description:"Simulation de ligne de production basée sur les principes du Lean Manufacturing. Les équipes optimisent les flux, réduisent les gaspillages et améliorent la valeur ajoutée.",
+   professors:[{name:"Martin Dubois",role:"Responsable",email:"m.dubois@iut.fr"},{name:"Sophie Leclerc",role:"Co-animatrice",email:"s.leclerc@iut.fr"}],
+   inventory:[{icon:"📦",name:"Pièces plastiques colorées",qty:"120"},{icon:"🃏",name:"Cartes processus",qty:"48"},{icon:"📋",name:"Tableau de bord équipe",qty:"4"},{icon:"⏱️",name:"Chronomètres",qty:"4"},{icon:"📏",name:"Règles de mesure",qty:"8"}],
+   rules:["Chaque équipe représente un atelier avec un rôle défini","La production suit un flux tiré par la demande client","Les gaspillages MUDA doivent être éliminés","Trois rounds permettent d'itérer les améliorations","Le score intègre délai, qualité et coût"],
+   docs:[{name:"Guide animateur v3.2.pdf",size:"2.4 MB",icon:"📄",url:""},{name:"Fiche étudiant.pdf",size:"850 KB",icon:"📄",url:""},{name:"Grille évaluation.xlsx",size:"120 KB",icon:"📊",url:""}],
+   incidents:[]},
+  {id:2,name:"5S Challenge",category:"Qualite",status:"in-use",location:"Salle A103",players:"4-16",duration:"2h",
+   description:"Mise en pratique de la méthode 5S dans un environnement de bureau simulé. Les étudiants organisent et standardisent un espace de travail chaotique.",
+   professors:[{name:"Claire Morin",role:"Responsable",email:"c.morin@iut.fr"}],
+   inventory:[{icon:"🗂️",name:"Dossiers et documents",qty:"60"},{icon:"🏷️",name:"Étiquettes de marquage",qty:"200"},{icon:"📸",name:"Fiches photos avant/après",qty:"30"},{icon:"✅",name:"Checklists d'audit",qty:"20"}],
+   rules:["La phase Seiri (trier) dure 20 minutes","Chaque décision doit être argumentée","La standardisation doit être documentée","L'audit final est réalisé par une équipe externe","Photo avant/après obligatoire"],
+   docs:[{name:"Scénario 5S v2.pdf",size:"1.8 MB",icon:"📄",url:""},{name:"Audit checklist.pdf",size:"450 KB",icon:"📄",url:""}],
+   incidents:[{type:"missing",desc:"3 checklists d'audit manquantes après session du 4/03",reporter:"Claire Morin",date:"05/03/2025",severity:"warn"}]},
+  {id:3,name:"FlowSim Logistique",category:"Logistique",status:"available",location:"Hall Logistique",players:"8-24",duration:"4h",
+   description:"Simulation de la chaîne logistique complète. Intègre la gestion des stocks, la préparation de commandes et la livraison.",
+   professors:[{name:"Pierre Garnier",role:"Responsable",email:"p.garnier@iut.fr"},{name:"Nadia Ouali",role:"Coordinatrice",email:"n.ouali@iut.fr"}],
+   inventory:[{icon:"📦",name:"Colis de simulation",qty:"80"},{icon:"🏷️",name:"Étiquettes codes-barres",qty:"150"},{icon:"📋",name:"Bons de commande",qty:"50"},{icon:"🗺️",name:"Plans d'entrepôt",qty:"6"},{icon:"🖥️",name:"Tablettes de suivi",qty:"4"}],
+   rules:["Chaque rôle est attribué en début de session","Le taux de service minimum est de 95%","Tout colis endommagé génère une pénalité","La rotation des stocks FIFO doit être respectée","Un feedback de 30 min clôt chaque session"],
+   docs:[{name:"Guide pédagogique FlowSim.pdf",size:"3.1 MB",icon:"📄",url:""},{name:"Indicateurs KPI.xlsx",size:"95 KB",icon:"📊",url:""}],
+   incidents:[]},
+  {id:4,name:"ISO 9001 Quest",category:"Qualite",status:"available",location:"Salle C305",players:"3-12",duration:"2h30",
+   description:"Jeu de cartes et plateau sur les exigences de la norme ISO 9001:2015. Les équipes construisent un Système de Management de la Qualité.",
+   professors:[{name:"Anne-Sophie Bernard",role:"Responsable",email:"as.bernard@iut.fr"}],
+   inventory:[{icon:"🃏",name:"Cartes exigences ISO",qty:"94"},{icon:"🎲",name:"Dés de contexte",qty:"3"},{icon:"📋",name:"Tableau de bord SMQ",qty:"4"},{icon:"🏆",name:"Jetons de conformité",qty:"60"}],
+   rules:["Les 10 chapitres correspondent à 10 zones du plateau","Chaque non-conformité retire 2 points de maturité","La revue de direction simule une prise de décision collective","L'équipe avec le meilleur score gagne","Les preuves documentaires sont requises"],
+   docs:[{name:"Règles complètes ISO Quest.pdf",size:"2.2 MB",icon:"📄",url:""},{name:"Référentiel ISO 9001.pdf",size:"1.5 MB",icon:"📄",url:""}],
+   incidents:[{type:"missing",desc:"2 dés de contexte introuvables après session du 7/03",reporter:"Anne-Sophie Bernard",date:"07/03/2025",severity:"danger"}]},
+  {id:5,name:"Hoshin Kanri Board",category:"Organisation",status:"unavailable",location:"Salle Projet",players:"5-15",duration:"3h",
+   description:"Simulation de déploiement stratégique par la méthode Hoshin Kanri. Les étudiants alignent objectifs stratégiques et actions opérationnelles.",
+   professors:[{name:"François Petit",role:"Responsable",email:"f.petit@iut.fr"}],
+   inventory:[{icon:"🗺️",name:"Tableaux A3",qty:"10"},{icon:"📌",name:"Post-its 4 couleurs",qty:"400"},{icon:"✏️",name:"Marqueurs effaçables",qty:"12"},{icon:"📊",name:"Matrices X catchball",qty:"5"}],
+   rules:["Chaque niveau hiérarchique = une couleur de post-it","Le catchball implique 3 niveaux minimum","Les KPIs doivent être SMART","La revue mensuelle est simulée après 45 min","L'alignement vertical est évalué en fin de session"],
+   docs:[{name:"Hoshin Kanri Guide.pdf",size:"1.9 MB",icon:"📄",url:""},{name:"Template Matrice X.xlsx",size:"200 KB",icon:"📊",url:""}],
+   incidents:[{type:"damage",desc:"Tableau A3 n°3 déchiré, non utilisable",reporter:"François Petit",date:"02/03/2025",severity:"warn"}]}
+];
+
+var bookings = [
+  {id:101,gameId:2,profName:"Claire Morin",start:"2025-03-03",end:"2025-03-05",group:"LP QLIO B - 20 étudiants",room:"Salle A103",notes:""},
+  {id:102,gameId:1,profName:"Martin Dubois",start:"2025-03-08",end:"2025-03-11",group:"BUT QLIO 2A",room:"Salle B202",notes:"Préparer les chronomètres"},
+  {id:103,gameId:4,profName:"Anne-Sophie Bernard",start:"2025-03-06",end:"2025-03-07",group:"LP QLIO A",room:"Salle C305",notes:""},
+  {id:104,gameId:3,profName:"Pierre Garnier",start:"2025-03-12",end:"2025-03-13",group:"BUT QLIO 3A",room:"Hall Logistique",notes:"Réserver hall logistique"},
+  {id:105,gameId:5,profName:"François Petit",start:"2025-03-17",end:"2025-03-19",group:"M1 QLIO",room:"Salle Projet",notes:""},
+  {id:106,gameId:2,profName:"Claire Morin",start:"2025-03-24",end:"2025-03-25",group:"LP QLIO C",room:"Salle A103",notes:""},
+  {id:107,gameId:1,profName:"Sophie Leclerc",start:"2025-03-26",end:"2025-03-27",group:"BUT QLIO 2B",room:"Salle B202",notes:""},
+  {id:108,gameId:4,profName:"Anne-Sophie Bernard",start:"2025-03-19",end:"2025-03-20",group:"LP QLIO B",room:"Salle C305",notes:""}
+];
+
+var extraProfs = [];
+var notifications = [
+  {id:1,type:"danger",icon:"⚠️",title:"Réservation Hoshin Kanri Board — échéance dans 2 jours",desc:"Session du 19/03 avec M1 QLIO approche. Vérifiez la disponibilité du matériel.",time:"Aujourd'hui, 08:00",unread:true,gameId:5},
+  {id:2,type:"danger",icon:"🔧",title:"Incident signalé — ISO 9001 Quest",desc:"2 dés de contexte manquants après la session du 07/03. Action corrective requise.",time:"07/03, 18:30",unread:true,gameId:4},
+  {id:3,type:"warn",icon:"🔧",title:"Incident signalé — 5S Challenge",desc:"3 checklists d'audit manquantes. Claire Morin a été informée.",time:"05/03, 09:00",unread:true,gameId:2},
+  {id:4,type:"info",icon:"✅",title:"Lean Factory — session terminée",desc:"La session BUT QLIO 2A s'est déroulée sans incident.",time:"11/03, 17:30",unread:false,gameId:1},
+  {id:5,type:"info",icon:"📅",title:"FlowSim Logistique — session prévue le 12/03",desc:"BUT QLIO 3A avec Pierre Garnier. Hall Logistique à préparer.",time:"10/03, 14:00",unread:false,gameId:3}
+];
+
+var selGameId=null, editingId=null, catF='all', stF='all', calMonth=2, calYear=2025;
+var chatStarted=false, chatOpen=false, pendingReport=null;
+var MFR=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+var GCOLS=['var(--accent)','var(--red)','var(--green)','#c45a00','#a07000'];
+var CAT_CSS={Qualite:"catQ",Logistique:"catL",Organisation:"catO",Industrie:"catI"};
+var STATUS_L={available:"Disponible","in-use":"En utilisation",unavailable:"Indisponible"};
+var STATUS_C={available:"var(--green)","in-use":"var(--accent)",unavailable:"var(--red)"};
+
+// ══ INIT ══
+function init(){renderDashboard();renderSidebar();renderProfs();renderCalendar();renderNotifications();updateBadges();}
+
+function updateBadges(){
+  document.getElementById('bdg-jeux').textContent=games.length;
+  document.getElementById('bdg-plan').textContent=bookings.length;
+  document.getElementById('bdg-profs').textContent=getAllProfs().length;
+  var u=notifications.filter(function(n){return n.unread;}).length;
+  var b=document.getElementById('bdg-notif');
+  b.textContent=u; b.style.display=u>0?'':'none';
+}
+
+// ══ TABS ══
+function goTab(t){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+  document.querySelectorAll('.ntab').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('view-'+t).classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='planning')renderCalendar();
+  if(t==='profs')renderProfs();
+  if(t==='notifications')renderNotifications();
+  if(t==='dashboard')renderDashboard();
+}
+
+// ══ DASHBOARD ══
+function renderDashboard(){
+  var tot=games.length, av=games.filter(function(g){return g.status==='available';}).length;
+  var iu=games.filter(function(g){return g.status==='in-use';}).length;
+  var ti=games.reduce(function(a,g){return a+(g.incidents?g.incidents.length:0);},0);
+  document.getElementById('dashStats').innerHTML=
+    scard('Jeux au catalogue',tot,'color:var(--accent)','jeux pédagogiques QLIO')+
+    scard('Disponibles',av,'color:var(--green)','prêts à l\'emploi')+
+    scard('En cours',iu,'color:var(--accent)','utilisés ce mois')+
+    scard('Incidents',ti,ti>0?'color:var(--red)':'color:var(--green)','signalés');
+  document.getElementById('activityList').innerHTML=[
+    {c:'var(--accent)',t:'<strong>5S Challenge</strong> réservé par C. Morin — LP QLIO B',tm:"Aujourd'hui, 09:14"},
+    {c:'var(--red)',t:'<strong>ISO 9001 Quest</strong> — Incident : 2 dés manquants',tm:'07/03, 18:30'},
+    {c:'var(--green)',t:'<strong>Lean Factory</strong> — session BUT QLIO 2A terminée',tm:'11/03, 17:30'},
+    {c:'var(--accent)',t:'<strong>FlowSim Logistique</strong> réservé pour le 12/03',tm:'07/03, 14:05'}
+  ].map(function(a){return '<div class="activity-row"><div class="dot" style="background:'+a.c+';box-shadow:0 0 5px '+a.c+';width:8px;height:8px"></div><div class="activity-text">'+a.t+'</div><div class="activity-time">'+a.tm+'</div></div>';}).join('');
+  document.getElementById('topGames').innerHTML=[...games].sort(function(a,b){return b.bookings.length-a.bookings.length;}).slice(0,3).map(function(g,i){
+    return '<div class="activity-row"><div style="font-family:\'Syne\',sans-serif;font-weight:800;font-size:15px;color:var(--text-muted);width:22px">'+(i+1)+'</div><div style="flex:1"><div style="font-weight:600;font-size:13px">'+g.name+'</div><div style="font-size:11px;color:var(--text-dim);font-family:\'IBM Plex Mono\',monospace">'+g.category+' · '+g.location+'</div></div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--text-dim)">'+g.bookings.length+' sessions</div><span class="cat '+catCss(g.category)+'" style="font-size:10px">'+g.category+'</span></div>';
+  }).join('');
+}
+function scard(l,v,vs,s){return '<div class="stat-card"><div class="stat-l">'+l+'</div><div class="stat-v" style="'+vs+'">'+v+'</div><div class="stat-s">'+s+'</div></div>';}
+
+// ══ SIDEBAR ══
+function catCss(c){return CAT_CSS[c]||'catQ';}
+function renderSidebar(){
+  var q=(document.getElementById('sInput').value||'').toLowerCase();
+  var list=games.filter(function(g){
+    return (catF==='all'||g.category===catF)&&(stF==='all'||g.status===stF)&&(g.name.toLowerCase().indexOf(q)>=0||g.location.toLowerCase().indexOf(q)>=0);
+  });
+  document.getElementById('gameSidebar').innerHTML=list.length===0?'<div style="padding:13px;font-size:12px;color:var(--text-muted);text-align:center;font-family:\'IBM Plex Mono\',monospace">Aucun résultat</div>':
+    list.map(function(g){
+      var hi=g.incidents&&g.incidents.length>0;
+      return '<div class="g-item'+(selGameId===g.id?' sel':'')+'" onclick="selGame('+g.id+')">'+'<div class="gi-name">'+g.name+(hi?' <span class="inc-flag">⚠</span>':'')+'</div>'+'<div class="gi-meta"><span class="dot '+g.status+'"></span><span>'+g.location+'</span><span class="cat '+catCss(g.category)+'" style="font-size:10px">'+g.category+'</span></div></div>';
+    }).join('');
+}
+function setCat(el,v){document.querySelectorAll('#catChips .chip').forEach(function(c){c.classList.remove('on');});el.classList.add('on');catF=v;renderSidebar();}
+function setSt(el,v){document.querySelectorAll('#stChips .chip').forEach(function(c){c.classList.remove('on');});el.classList.add('on');stF=v;renderSidebar();}
+function selGame(id){selGameId=id;renderSidebar();goTab('jeux');renderDetail();}
+
+// ══ DETAIL ══
+function renderDetail(){
+  var g=games.find(function(x){return x.id===selGameId;});if(!g)return;
+  var sc=STATUS_C[g.status],sl=STATUS_L[g.status];
+  var gbk=bookings.filter(function(b){return b.gameId===g.id;});
+  var ic=g.incidents?g.incidents.length:0;
+
+  document.getElementById('gameDetail').innerHTML=
+    '<div class="detail-hero">'+'<div>'+'<h1>'+g.name+' <span class="cat '+catCss(g.category)+'" style="font-size:11px;vertical-align:middle">'+g.category+'</span></h1>'+
+    '<div class="detail-meta"><span class="dot '+g.status+'"></span><span style="color:'+sc+'">'+sl+'</span><span>·</span>📍 '+g.location+'<span>·</span>👥 '+g.players+'<span>·</span>⏱ '+g.duration+'</div></div>'+
+    '<div class="detail-acts">'+'<button class="btn btn-secondary btn-sm" onclick="openEditGame('+g.id+')">✏️ Modifier</button>'+'<button class="btn btn-secondary btn-sm" onclick="openBookingModal('+g.id+')">📅 Réserver</button>'+'<button class="btn btn-warn btn-sm" onclick="openIncident('+g.id+')">⚠️ Incident</button>'+'<button class="btn btn-danger btn-sm" onclick="delGame('+g.id+')">🗑</button></div></div>'+
+    '<div class="info-strip">'+'<div class="ip"><div class="ip-l">Statut</div><div class="ip-v" style="color:'+sc+'">'+sl+'</div></div>'+'<div class="ip"><div class="ip-l">Localisation</div><div class="ip-v">'+g.location+'</div></div>'+'<div class="ip"><div class="ip-l">Joueurs</div><div class="ip-v">'+g.players+'</div></div>'+'<div class="ip"><div class="ip-l">Durée</div><div class="ip-v">'+g.duration+'</div></div></div>'+
+    '<div class="dtabs">'+
+      '<button class="dtab active" onclick="swTab(this,\'tp-info\')">Info & Règles</button>'+
+      '<button class="dtab" onclick="swTab(this,\'tp-inv\')">Inventaire</button>'+
+      '<button class="dtab" onclick="swTab(this,\'tp-profs\')">Professeurs</button>'+
+      '<button class="dtab" onclick="swTab(this,\'tp-cal\')">Réservations</button>'+
+      '<button class="dtab" onclick="swTab(this,\'tp-docs\')">Documents</button>'+
+      '<button class="dtab" onclick="swTab(this,\'tp-inc\')" style="'+(ic>0?'color:var(--red)':'')+'">Incidents'+(ic>0?' <span class="dtab-badge">'+ic+'</span>':'')+'</button>'+
+    '</div>'+
+    '<div class="tab-pane active" id="tp-info">'+'<div class="card" style="margin-bottom:11px"><div class="card-head"><h3>Description pédagogique</h3></div><div class="card-body" style="font-size:13px;color:var(--text-dim);line-height:1.7">'+g.description+'</div></div>'+
+    '<div class="card"><div class="card-head"><h3>Règles du jeu</h3></div><div class="card-body"><ul class="rules-ul">'+g.rules.map(function(r){return '<li>'+r+'</li>';}).join('')+'</ul></div></div></div>'+
+    '<div class="tab-pane" id="tp-inv">'+'<div class="card"><div class="card-head"><h3>Inventaire</h3><span style="font-size:11px;color:var(--text-muted);font-family:\'IBM Plex Mono\',monospace">'+g.inventory.length+' éléments</span></div><div class="card-body">'+g.inventory.map(function(i){return '<div class="inv-row"><div class="inv-l"><span style="font-size:15px">'+i.icon+'</span><span>'+i.name+'</span></div><span class="inv-q">×'+i.qty+'</span></div>';}).join('')+'</div></div></div>'+
+    '<div class="tab-pane" id="tp-profs"><div class="card"><div class="card-head"><h3>Professeurs responsables</h3></div><div class="card-body">'+g.professors.map(function(p){return '<div class="prof-row"><div class="pav">'+ini(p.name)+'</div><div><div class="pname">'+p.name+'</div><div class="prole">'+p.role+'</div><div class="pemail">'+p.email+'</div></div></div>';}).join('')+'</div></div></div>'+
+    '<div class="tab-pane" id="tp-cal"><div class="card"><div class="card-head"><h3>Réservations ('+gbk.length+')</h3></div><div class="card-body">'+(gbk.length===0?'<div style="font-size:12px;color:var(--text-muted);font-family:\'IBM Plex Mono\',monospace">Aucune réservation</div>':gbk.map(function(b){return '<div class="brow"><span style="font-weight:500;font-size:13px">'+b.profName+'</span><span class="brow-d">'+fmtRange(b.start,b.end)+(b.group?' · '+b.group:'')+(b.room?' · '+b.room:'')+'</span><button onclick="delBooking('+b.id+')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:11px;padding:0 3px">✕</button></div>';}).join(''))+'</div></div></div>'+
+    '<div class="tab-pane" id="tp-docs"><div class="card"><div class="card-head"><h3>Documents associés</h3><button class="add-row-btn" onclick="triggerDocUpload('+g.id+')">📎 Ajouter</button></div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px">'+g.docs.map(function(d,idx){return '<div class="doc-row" onclick="openDoc(\''+d.url+'\')">'+'<span style="font-size:16px">'+d.icon+'</span><span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+d.name+'</span><span class="doc-sz">'+d.size+'</span><button class="doc-del" onclick="delDoc(event,'+g.id+','+idx+')">✕</button></div>';}).join('')+'</div>'+'<div class="doc-upload" onclick="triggerDocUpload('+g.id+')" ondragover="event.preventDefault();this.classList.add(\'drag\')" ondragleave="this.classList.remove(\'drag\')" ondrop="handleDocDrop(event,'+g.id+')">'+'<div style="font-size:22px;opacity:.25">📁</div>'+'<div style="font-size:11px;color:var(--text-muted);font-family:\'IBM Plex Mono\',monospace;margin-top:3px">Cliquer ou glisser-déposer un fichier</div>'+'<div style="font-size:10px;color:var(--text-muted);opacity:.6;margin-top:2px">PDF · Excel · Word · PowerPoint · Images</div>'+'</div></div></div></div>'+
+    '<div class="tab-pane" id="tp-inc"><div class="card"><div class="card-head"><h3>Incidents signalés</h3><button class="btn btn-warn btn-sm" onclick="openIncident('+g.id+')">+ Signaler</button></div><div class="card-body">'+(ic===0?'<div style="text-align:center;color:var(--text-muted);font-size:13px;padding:18px">✅ Aucun incident</div>':g.incidents.map(function(inc){var tl={missing:'Pièce manquante',damage:'Élément endommagé',missing_doc:'Document manquant',other:'Autre'};return '<div class="inc-item '+inc.severity+'"><div class="inc-header"><span class="inc-type '+inc.severity+'">'+tl[inc.type]+'</span><span class="inc-date">'+inc.date+'</span></div><div class="inc-desc">'+inc.desc+'</div><div class="inc-reporter">Signalé par : '+inc.reporter+'</div></div>';}).join(''))+'</div></div></div>';
+}
+
+function swTab(btn,id){
+  btn.closest('.game-detail').querySelectorAll('.dtab').forEach(function(t){t.classList.remove('active');});
+  btn.closest('.game-detail').querySelectorAll('.tab-pane').forEach(function(p){p.classList.remove('active');});
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+// ══ ADD / EDIT / DELETE GAME ══
+function openAddGame(){['ag-name','ag-loc','ag-pl','ag-dur','ag-desc','ag-rules','ag-pname','ag-pemail','ag-inv'].forEach(function(i){var e=document.getElementById(i);if(e)e.value='';});openM('mAddGame');}
+function addGame(){
+  var name=document.getElementById('ag-name').value.trim();if(!name){toast('Nom requis',true);return;}
+  var inv=document.getElementById('ag-inv').value.split('\n').filter(Boolean).map(function(l){var p=l.split(' x');return{icon:'📦',name:p[0].trim(),qty:(p[1]||'1').trim()};});
+  var pn=document.getElementById('ag-pname').value.trim();
+  var g={id:Date.now(),name:name,category:document.getElementById('ag-cat').value,status:document.getElementById('ag-st').value,location:document.getElementById('ag-loc').value||'Non définie',players:document.getElementById('ag-pl').value||'N/A',duration:document.getElementById('ag-dur').value||'N/A',description:document.getElementById('ag-desc').value||'Aucune description.',professors:pn?[{name:pn,role:'Responsable',email:document.getElementById('ag-pemail').value}]:[],inventory:inv,rules:document.getElementById('ag-rules').value.split('\n').filter(Boolean),docs:[],incidents:[]};
+  games.push(g);closeM('mAddGame');renderSidebar();renderProfs();renderCalendar();renderDashboard();updateBadges();toast('"'+name+'" ajouté');selGame(g.id);
+}
+function delGame(id){if(!confirm('Supprimer ce jeu ?'))return;games=games.filter(function(g){return g.id!==id;});bookings=bookings.filter(function(b){return b.gameId!==id;});selGameId=null;document.getElementById('gameDetail').innerHTML='<div class="empty-panel"><div class="bi">🎲</div><h3>Jeu supprimé</h3><p>Sélectionnez un autre jeu.</p></div>';renderSidebar();renderProfs();renderCalendar();renderDashboard();updateBadges();toast('Jeu supprimé');}
+function openEditGame(id){editingId=id;var g=games.find(function(x){return x.id===id;});document.getElementById('edit-ttl').textContent=g.name;document.getElementById('eg-name').value=g.name;document.getElementById('eg-cat').value=g.category;document.getElementById('eg-st').value=g.status;document.getElementById('eg-loc').value=g.location;document.getElementById('eg-pl').value=g.players;document.getElementById('eg-dur').value=g.duration;document.getElementById('eg-desc').value=g.description;document.getElementById('eg-rules').value=g.rules.join('\n');document.getElementById('invEd').innerHTML=g.inventory.map(function(i){return invRowHtml(i.icon,i.name,i.qty);}).join('');document.getElementById('profEd').innerHTML=g.professors.map(function(p){return profRowHtml(p.name,p.email);}).join('');openM('mEditGame');}
+function saveEdit(){var g=games.find(function(x){return x.id===editingId;});if(!g)return;g.name=document.getElementById('eg-name').value.trim()||g.name;g.category=document.getElementById('eg-cat').value;g.status=document.getElementById('eg-st').value;g.location=document.getElementById('eg-loc').value.trim()||g.location;g.players=document.getElementById('eg-pl').value.trim()||g.players;g.duration=document.getElementById('eg-dur').value.trim()||g.duration;g.description=document.getElementById('eg-desc').value.trim()||g.description;g.rules=document.getElementById('eg-rules').value.split('\n').filter(Boolean);g.inventory=Array.from(document.querySelectorAll('#invEd .inv-edit-row')).map(function(r){return{icon:r.querySelector('.iic').value.trim()||'📦',name:r.querySelector('.inc').value.trim(),qty:r.querySelector('.iqc').value.trim()||'1'};}).filter(function(i){return i.name;});g.professors=Array.from(document.querySelectorAll('#profEd .prof-edit-row')).map(function(r){return{name:r.querySelector('.pnc').value.trim(),email:r.querySelector('.pec').value.trim()||'',role:'Responsable'};}).filter(function(p){return p.name;});closeM('mEditGame');renderSidebar();renderDetail();renderProfs();renderCalendar();renderDashboard();updateBadges();toast('"'+g.name+'" mis à jour');}
+function invRowHtml(ic,nm,q){return '<div class="inv-edit-row"><input type="text" value="'+ic+'" class="iic" style="width:36px;text-align:center"><input type="text" value="'+nm+'" class="inc" style="flex:1" placeholder="Nom"><input type="text" value="'+q+'" class="iqc" style="width:54px" placeholder="Qté"><button onclick="this.closest(\'.inv-edit-row\').remove()" class="btn btn-danger btn-sm">✕</button></div>';}
+function profRowHtml(n,e){return '<div class="prof-edit-row"><input type="text" value="'+n+'" class="pnc" placeholder="Nom Prénom"><input type="email" value="'+e+'" class="pec" placeholder="email@iut.fr"><button onclick="this.closest(\'.prof-edit-row\').remove()" class="btn btn-danger btn-sm">✕</button></div>';}
+function addInvRow(){document.getElementById('invEd').insertAdjacentHTML('beforeend',invRowHtml('📦','','1'));}
+function addProfRow(){document.getElementById('profEd').insertAdjacentHTML('beforeend',profRowHtml('',''));}
+
+// ══ DOCUMENTS ══
+function openDoc(url){if(url)window.open(url,'_blank');}
+function delDoc(event,gameId,idx){event.stopPropagation();var g=games.find(function(x){return x.id===gameId;});if(!g)return;g.docs.splice(idx,1);if(selGameId===gameId)renderDetail();toast('Document supprimé');}
+function triggerDocUpload(gameId){var inp=document.getElementById('docFileInput');inp.setAttribute('data-gid',gameId);inp.click();}
+function handleDocDrop(event,gameId){event.preventDefault();event.target.closest('.doc-upload').classList.remove('drag');processFiles(event.dataTransfer.files,gameId);}
+function processFiles(files,gameId){var g=games.find(function(x){return x.id===gameId;});if(!g||!files.length)return;Array.from(files).forEach(function(file){var ext=file.name.split('.').pop().toLowerCase();var icon=ext==='pdf'?'📄':(ext==='xlsx'||ext==='xls')?'📊':(ext==='pptx'||ext==='ppt')?'📑':(ext==='docx'||ext==='doc')?'📝':'📎';var sz=file.size>1024*1024?(file.size/1024/1024).toFixed(1)+' MB':Math.round(file.size/1024)+' KB';g.docs.push({name:file.name,size:sz,icon:icon,url:URL.createObjectURL(file)});});if(selGameId===gameId)renderDetail();toast(files.length+' document(s) ajouté(s)');}
+document.getElementById('docFileInput').addEventListener('change',function(){var gid=parseInt(this.getAttribute('data-gid'));processFiles(this.files,gid);this.value='';});
+
+// ══ INCIDENTS ══
+function openIncident(id){document.getElementById('inc-gid').value=id;document.getElementById('inc-desc').value='';document.getElementById('inc-reporter').value='';openM('mIncident');}
+function confirmIncident(){var gid=parseInt(document.getElementById('inc-gid').value);var g=games.find(function(x){return x.id===gid;});var desc=document.getElementById('inc-desc').value.trim();if(!desc){toast('Description requise',true);return;}var type=document.getElementById('inc-type').value;var reporter=document.getElementById('inc-reporter').value.trim()||'Anonyme';var sev=(type==='missing'||type==='damage')?'danger':'warn';g.incidents.push({type:type,desc:desc,reporter:reporter,date:new Date().toLocaleDateString('fr-FR'),severity:sev});notifications.unshift({id:Date.now(),type:'warn',icon:'⚠️',title:'Incident signalé — '+g.name,desc:desc+' (Signalé par '+reporter+')',time:'Maintenant',unread:true,gameId:g.id});closeM('mIncident');renderSidebar();renderDashboard();if(selGameId===gid)renderDetail();renderNotifications();updateBadges();toast('Incident enregistré');}
+
+// ══ ADD PROF ══
+function confirmAddProf(){var name=document.getElementById('np-name').value.trim();if(!name){toast('Nom requis',true);return;}extraProfs.push({name:name,email:document.getElementById('np-email').value,spec:document.getElementById('np-spec').value,phone:document.getElementById('np-phone').value});closeM('mAddProf');renderProfs();updateBadges();toast('"'+name+'" ajouté');['np-name','np-email','np-spec','np-phone'].forEach(function(i){document.getElementById(i).value='';});}
+
+// ══ NOTIFICATIONS ══
+function renderNotifications(){
+  var unread=notifications.filter(function(n){return n.unread;}).length;
+  document.getElementById('notifList').innerHTML=notifications.map(function(n){
+    return '<div class="notif-item'+(n.unread?' unread':'')+(n.type==='danger'?' danger':'')+'" onclick="readNotif('+n.id+',this)">'+
+      '<div class="notif-icon">'+n.icon+'</div>'+
+      '<div class="notif-content"><div class="notif-title">'+n.title+'</div><div class="notif-desc">'+n.desc+'</div><div class="notif-time">'+n.time+'</div></div>'+
+      (n.unread?'<div class="notif-unread-dot"></div>':'')+
+      '</div>';
+  }).join('');
+  updateBadges();
+}
+function readNotif(id,el){var n=notifications.find(function(x){return x.id===id;});if(n){n.unread=false;el.classList.remove('unread');var d=el.querySelector('.notif-unread-dot');if(d)d.remove();updateBadges();}}
+function markAllRead(){notifications.forEach(function(n){n.unread=false;});renderNotifications();toast('Toutes lues ✓');}
+
+// ══ PLANNING ══
+function renderCalendar(){
+  var ttl=MFR[calMonth]+' '+calYear;
+  document.getElementById('monthLbl').textContent=ttl;
+  document.getElementById('planTitle').textContent=ttl;
+  var first=new Date(calYear,calMonth,1).getDay();
+  var dim=new Date(calYear,calMonth+1,0).getDate();
+  var off=first===0?6:first-1;
+  var today=new Date();
+  var dayBk={};
+  bookings.forEach(function(b){var s=new Date(b.start+'T00:00:00'),e=new Date(b.end+'T00:00:00'),d=new Date(s);while(d<=e){if(d.getFullYear()===calYear&&d.getMonth()===calMonth){var day=d.getDate();if(!dayBk[day])dayBk[day]=[];var gi=games.findIndex(function(g){return g.id===b.gameId;});dayBk[day].push({b:b,g:games[gi],ci:gi%5});}d.setDate(d.getDate()+1);}});
+  var html='';
+  for(var i=0;i<off;i++)html+='<div class="cal-cell empty"></div>';
+  for(var d=1;d<=dim;d++){var isTd=today.getDate()===d&&today.getMonth()===calMonth&&today.getFullYear()===calYear;var bks=dayBk[d]||[];html+='<div class="cal-cell'+(isTd?' today':'')+'"><div class="cal-dn'+(isTd?' tnow':'')+'">'+d+(isTd?'<span class="tnow-pip"></span>':'')+'</div>';bks.slice(0,3).forEach(function(item){html+='<div class="bchip bc'+item.ci+'" onclick="selGame('+item.b.gameId+')" title="'+(item.g?item.g.name:'?')+' — '+item.b.profName+(item.b.room?' — '+item.b.room:'')+'">'+item.b.profName.split(' ')[0]+(item.g?' · '+item.g.name:'')+'</div>';});if(bks.length>3)html+='<div style="font-size:9px;color:var(--text-muted);font-family:\'IBM Plex Mono\',monospace">+'+( bks.length-3)+' autres</div>';html+='</div>';}
+  document.getElementById('calCells').innerHTML=html;
+  var gids=[];bookings.forEach(function(b){var s=new Date(b.start+'T00:00:00'),e=new Date(b.end+'T00:00:00');if((s.getFullYear()===calYear&&s.getMonth()===calMonth)||(e.getFullYear()===calYear&&e.getMonth()===calMonth)){if(gids.indexOf(b.gameId)<0)gids.push(b.gameId);}});
+  document.getElementById('calLegend').innerHTML=gids.map(function(gid){var g=games.find(function(x){return x.id===gid;});var ci=games.findIndex(function(x){return x.id===gid;})%5;return g?'<div class="leg-it"><div class="leg-sq" style="background:'+GCOLS[ci]+'"></div>'+g.name+'</div>':'';}).join('');
+  var mBk=bookings.filter(function(b){var s=new Date(b.start+'T00:00:00'),e=new Date(b.end+'T00:00:00');return(s.getFullYear()===calYear&&s.getMonth()===calMonth)||(e.getFullYear()===calYear&&e.getMonth()===calMonth);}).sort(function(a,b){return new Date(a.start)-new Date(b.start);});
+  document.getElementById('planList').innerHTML=mBk.length===0?'<div style="color:var(--text-muted);font-size:13px;font-family:\'IBM Plex Mono\',monospace;padding:11px">Aucune réservation ce mois-ci</div>':mBk.map(function(b){var g=games.find(function(x){return x.id===b.gameId;});var s=new Date(b.start+'T00:00:00');var ci=games.findIndex(function(x){return x.id===b.gameId;})%5;return'<div class="plan-row"><div class="pdb"><div class="pday">'+s.getDate()+'</div><div class="pmo">'+MFR[s.getMonth()].slice(0,3)+'</div></div><div style="width:3px;height:38px;border-radius:2px;background:'+GCOLS[ci]+';flex-shrink:0"></div><div class="pinfo"><div class="pgame">'+(g?g.name:'Jeu inconnu')+' <span class="cat '+(g?catCss(g.category):'')+'" style="font-size:10px">'+(g?g.category:'')+'</span></div><div class="pdet"><span>👩‍🏫 '+b.profName+'</span><span>📅 '+fmtRange(b.start,b.end)+'</span>'+(b.group?'<span>👥 '+b.group+'</span>':'')+(b.room?'<span>📍 '+b.room+'</span>':'')+(b.notes?'<span>📝 '+b.notes+'</span>':'')+'</div></div><div style="display:flex;align-items:center;gap:6px"><span class="dot '+(g?g.status:'available')+'"></span><button onclick="delBooking('+b.id+')" class="btn btn-danger btn-sm">✕</button></div></div>';}).join('');}
+function changeMonth(dir){calMonth+=dir;if(calMonth<0){calMonth=11;calYear--;}if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+
+// ══ PROFS ══
+function getAllProfs(){var map={};games.forEach(function(g){g.professors.forEach(function(p){if(!map[p.name])map[p.name]={name:p.name,email:p.email,spec:'',phone:'',games:[],bk:[]};if(!map[p.name].games.find(function(gg){return gg.id===g.id;}))map[p.name].games.push(g);});});bookings.forEach(function(b){if(map[b.profName])map[b.profName].bk.push(b);});extraProfs.forEach(function(p){if(!map[p.name])map[p.name]={name:p.name,email:p.email,spec:p.spec||'',phone:p.phone||'',games:[],bk:[]};});return Object.values(map);}
+function renderProfs(){
+  var q=(document.getElementById('profSearch')?document.getElementById('profSearch').value:'').toLowerCase();
+  var profs=getAllProfs().filter(function(p){return p.name.toLowerCase().indexOf(q)>=0||p.email.toLowerCase().indexOf(q)>=0;});
+  document.getElementById('profsGrid').innerHTML=profs.map(function(p){
+    var bks=p.bk.slice().sort(function(a,b){return new Date(a.start)-new Date(b.start);});
+    return'<div class="pcard"><div class="pcard-top"><div class="pav2">'+ini(p.name)+'</div><div><div class="pc-name">'+p.name+'</div><div class="pc-email">'+p.email+'</div><div class="pc-sub">'+(p.spec||'Formateur QLIO')+' · '+p.games.length+' jeu'+(p.games.length>1?'x':'')+' · '+p.bk.length+' résa</div></div></div>'+
+    '<div class="pcard-body"><div class="pc-sec">Jeux en charge</div><div style="margin-bottom:11px">'+p.games.map(function(g){return'<span class="gtag" onclick="selGame('+g.id+')"><span class="dot '+g.status+'"></span>'+g.name+'</span>';}).join('')+(p.games.length===0?'<span style="font-size:11px;color:var(--text-muted)">Aucun jeu assigné</span>':'')+'</div>'+
+    '<div class="pc-sec">Réservations ('+bks.length+')</div>'+(bks.length===0?'<div style="font-size:11px;color:var(--text-muted);font-family:\'IBM Plex Mono\',monospace">Aucune réservation</div>':bks.map(function(b){var g=games.find(function(x){return x.id===b.gameId;});return'<div class="brow"><span style="font-weight:500">'+(g?g.name:'?')+'</span><span class="brow-d">'+fmtRange(b.start,b.end)+(b.group?' · '+b.group:'')+'</span><button onclick="delBooking('+b.id+');renderProfs();" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:11px;padding:0 3px">✕</button></div>';}).join(''))+'</div></div>';
+  }).join('')||'<div style="color:var(--text-muted);font-size:13px;font-family:\'IBM Plex Mono\',monospace">Aucun professeur trouvé</div>';
+}
+
+// ══ RESERVATIONS ══
+function openBookingModal(preId){
+  document.getElementById('bk-game').innerHTML=games.map(function(g){return'<option value="'+g.id+'"'+(preId===g.id?' selected':'')+'>'+g.name+'</option>';}).join('');
+  updateBkProf();
+  var now=new Date(),pad=function(n){return String(n).padStart(2,'0');};
+  var td=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+  document.getElementById('bk-start').value=td;document.getElementById('bk-end').value=td;
+  document.getElementById('bk-grp').value='';document.getElementById('bk-notes').value='';
+  var g=preId?games.find(function(x){return x.id===preId;}):null;
+  document.getElementById('bk-room').value=g?g.location:'';
+  openM('mBooking');
+}
+function updateBkProf(){var gid=parseInt(document.getElementById('bk-game').value);var g=games.find(function(x){return x.id===gid;});var all=getAllProfs().map(function(p){return p.name;});document.getElementById('bk-prof').innerHTML=all.map(function(n){return'<option value="'+n+'">'+n+'</option>';}).join('');if(g&&g.professors.length)document.getElementById('bk-prof').value=g.professors[0].name;}
+function confirmBooking(){var gid=parseInt(document.getElementById('bk-game').value);var pn=document.getElementById('bk-prof').value;var s=document.getElementById('bk-start').value,e=document.getElementById('bk-end').value;if(!s||!e){toast('Dates requises',true);return;}if(new Date(e)<new Date(s)){toast('Date fin avant date début',true);return;}bookings.push({id:Date.now(),gameId:gid,profName:pn,start:s,end:e,group:document.getElementById('bk-grp').value,room:document.getElementById('bk-room').value,notes:document.getElementById('bk-notes').value});var g=games.find(function(x){return x.id===gid;});if(g)g.status='in-use';closeM('mBooking');renderSidebar();if(selGameId===gid)renderDetail();renderCalendar();renderProfs();renderDashboard();updateBadges();notifications.unshift({id:Date.now(),type:'info',icon:'📅',title:'Réservation confirmée — '+(g?g.name:''),desc:pn+' · '+fmtRange(s,e)+(document.getElementById('bk-grp').value?' · '+document.getElementById('bk-grp').value:''),time:'Maintenant',unread:true,gameId:gid});renderNotifications();toast('Réservation confirmée');}
+function delBooking(id){bookings=bookings.filter(function(b){return b.id!==id;});renderCalendar();renderProfs();if(selGameId)renderDetail();updateBadges();toast('Réservation supprimée');}
+
+// ══ CHATBOT ══
+var BOTS=[
+  {keys:['bonjour','salut'],rep:"Bonjour ! Je suis votre assistant QLIO.\n\nJe peux vous aider à :\n— Trouver quel professeur gère un jeu\n— Consulter les disponibilités\n— Générer un rapport REX\n— Envoyer ce rapport par e-mail\n— Signaler des incidents\n\nComment puis-je vous aider ?"},
+  {keys:['retour','rex','bilan','experience'],rep:"__REX__"},
+  {keys:['amelior'],rep:"Pistes d'amélioration fréquentes :\n\n→ Réduire la phase d'explication initiale\n→ Ajouter des variantes de scénarios\n→ Enrichir les fiches de débrief\n→ Prévoir un temps de réflexion individuel"},
+  {keys:['difficulte','probleme'],rep:"Difficultés les plus souvent remontées :\n\n→ Compréhension des rôles au démarrage\n→ Gestion du temps par équipe\n→ Interprétation des indicateurs KPI\n\nSouhaitez-vous une fiche de consignes simplifiée ?"},
+  {keys:['email','mail','envoyer'],rep:"__MAIL__"},
+  {keys:['incident','manquant','casse'],rep:"__INCIDENTS__"},
+  {keys:['prof','responsable','formateur','qui'],rep:"__PROF__"},
+  {keys:['disponib','libre'],rep:"__DISPO__"},
+  {keys:['aide','?'],rep:"Je peux vous aider sur :\n\n→ Quel prof gère quel jeu ?\n→ Disponibilités des jeux\n→ Incidents signalés\n→ Générer un rapport REX\n→ Envoyer un rapport par e-mail"}
+];
+
+function getBotReply(msg){
+  var m=msg.toLowerCase();
+  var g=selGameId?games.find(function(x){return x.id===selGameId;}):games.find(function(x){return m.indexOf(x.name.toLowerCase())>=0;});
+  for(var i=0;i<BOTS.length;i++){for(var j=0;j<BOTS[i].keys.length;j++){if(m.indexOf(BOTS[i].keys[j])>=0){
+    var r=BOTS[i].rep;
+    if(r==='__REX__'){if(g){var rep=generateREX(g);pendingReport={game:g,report:rep};return'Rapport REX pour <strong>'+g.name+'</strong> :\n<div class="report-pre">'+rep+'</div>\nTapez <em>"envoyer par email"</em> pour l\'envoyer.';}return'Pour quel jeu ? Ex : "rapport REX Lean Factory"';}
+    if(r==='__MAIL__'){if(pendingReport){openMailModal(pendingReport);return'La fenêtre d\'envoi est ouverte ✓';}return'Générez d\'abord un rapport REX. Ex : "rapport REX 5S Challenge"';}
+    if(r==='__INCIDENTS__'){var all=games.filter(function(x){return x.incidents&&x.incidents.length>0;});if(all.length===0)return'✅ Aucun incident signalé actuellement.';var h='⚠️ <strong>'+all.reduce(function(a,x){return a+x.incidents.length;},0)+' incident(s)</strong> :<br><br>';all.forEach(function(x){x.incidents.forEach(function(inc){h+='<strong>'+x.name+'</strong> — '+inc.desc+'<br><small style="color:var(--text-muted)">'+inc.date+' · '+inc.reporter+'</small><br><br>';});});return h;}
+    if(r==='__PROF__'){if(g){var h2='<strong>'+g.name+'</strong> est géré par :<br><br>';g.professors.forEach(function(p){h2+='👤 <strong>'+p.name+'</strong> — '+p.role+'<br>✉ '+p.email+'<br><br>';});return h2;}var h3='Professeurs responsables :<br><br>';games.forEach(function(x){h3+='<strong>'+x.name+'</strong> → '+x.professors.map(function(p){return p.name;}).join(', ')+'<br>';});return h3;}
+    if(r==='__DISPO__'){var av=games.filter(function(x){return x.status==='available';});var iu=games.filter(function(x){return x.status==='in-use';});var un=games.filter(function(x){return x.status==='unavailable';});return'📊 <strong>État des jeux :</strong><br><br>✅ <strong>Disponibles ('+av.length+')</strong> : '+(av.map(function(x){return x.name;}).join(', ')||'aucun')+'<br><br>🟠 <strong>En cours ('+iu.length+')</strong> : '+(iu.map(function(x){return x.name;}).join(', ')||'aucun')+'<br><br>🔴 <strong>Indisponibles ('+un.length+')</strong> : '+(un.map(function(x){return x.name;}).join(', ')||'aucun');}
+    return r;
+  }}}
+  if(g)return'📋 <strong>'+g.name+'</strong> ['+g.category+']<br><br>📍 '+g.location+'<br>👥 '+g.players+' · ⏱ '+g.duration+'<br>Statut : '+STATUS_L[g.status]+'<br>Responsable(s) : '+g.professors.map(function(p){return p.name;}).join(', ')+(g.incidents&&g.incidents.length>0?'<br>⚠️ '+g.incidents.length+' incident(s)':'<br>✅ Aucun incident');
+  return'Je n\'ai pas compris. Essayez :<br>— "prof Lean Factory"<br>— "disponibilités"<br>— "rapport REX 5S"<br>— "incidents"<br>— "aide"';
+}
+
+function generateREX(g){var today=new Date().toLocaleDateString('fr-FR');return'RAPPORT DE RETOUR D\'EXPÉRIENCE\n====================================\nJeu         : '+g.name+'\nCatégorie   : '+g.category+'\nSalle       : '+g.location+'\nDate rapport: '+today+'\n\nFORMATEURS RESPONSABLES\n-----------------------\n'+g.professors.map(function(p){return p.name+' — '+p.role+' — '+p.email;}).join('\n')+'\n\nINVENTAIRE\n----------\n'+g.inventory.map(function(i){return i.icon+' '+i.name+' : ×'+i.qty;}).join('\n')+'\n\nRÈGLES APPLIQUÉES\n-----------------\n'+g.rules.map(function(r,i){return(i+1)+'. '+r;}).join('\n')+'\n\nINCIDENTS SIGNALÉS\n-------------------\n'+(g.incidents&&g.incidents.length>0?g.incidents.map(function(i){return'- ['+i.type+'] '+i.desc+' ('+i.date+')';}).join('\n'):'- Aucun incident signalé')+'\n\nÉVALUATION GLOBALE\n------------------\n[ ] Objectifs pédagogiques atteints\n[ ] Matériel complet et en bon état\n[ ] Améliorations à prévoir\n\nCommentaires : ___________________________\nSignature    : ___________________________';}
+
+function openMailModal(data){document.getElementById('mail-to').value=data.game.professors.map(function(p){return p.email;}).join(', ');document.getElementById('mail-subj').value='Retour d\'expérience — '+data.game.name+' — '+new Date().toLocaleDateString('fr-FR');document.getElementById('mail-body').value=data.report;openM('mMail');}
+function sendMail(){var to=document.getElementById('mail-to').value;if(!to){toast('Destinataire requis',true);return;}window.location.href='mailto:'+to+'?subject='+encodeURIComponent(document.getElementById('mail-subj').value)+'&body='+encodeURIComponent(document.getElementById('mail-body').value);closeM('mMail');toast('Rapport envoyé ✓');chatAddMsg('✅ Rapport envoyé à <strong>'+to+'</strong> !','bot');}
+
+function chatAddMsg(html,role){var msgs=document.getElementById('chatMsgs');var now=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});var div=document.createElement('div');div.className='msg '+role;div.innerHTML='<div class="msg-b">'+html.replace(/\n/g,'<br>')+'</div><div class="msg-t">'+now+'</div>';msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;}
+function showTyping(){var msgs=document.getElementById('chatMsgs');var div=document.createElement('div');div.className='msg bot';div.id='typingInd';div.innerHTML='<div class="msg-b" style="padding:10px 14px"><div style="display:flex;gap:4px;align-items:center"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>';msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;}
+function showSugs(lastMsg){var m=(lastMsg||'').toLowerCase();var s=[];if(m.indexOf('retour')>=0||m.indexOf('rex')>=0)s=['Envoyer par e-mail','Disponibilités','Incidents'];else if(m.indexOf('incident')>=0)s=['Rapport REX','Prof responsable','Disponibilités'];else s=['Disponibilités','Incidents','Rapport REX Lean Factory','Aide'];document.getElementById('chatSugs').innerHTML=s.map(function(x){return'<button class="sug" onclick="useSug(\''+x+'\')">'+x+'</button>';}).join('');}
+function useSug(t){document.getElementById('cInput').value=t;sendChat();}
+function sendChat(){var inp=document.getElementById('cInput');var msg=inp.value.trim();if(!msg)return;inp.value='';inp.style.height='';document.getElementById('chatSugs').innerHTML='';chatAddMsg(msg,'user');showTyping();setTimeout(function(){var ind=document.getElementById('typingInd');if(ind)ind.remove();chatAddMsg(getBotReply(msg),'bot');showSugs(msg);},600+Math.random()*400);}
+function toggleChat(){chatOpen=!chatOpen;var panel=document.getElementById('chatPanel');var btn=document.getElementById('chatBtn');if(chatOpen){panel.classList.add('open');btn.innerHTML='✕';btn.style.background='var(--surface2)';btn.style.color='var(--text)';var g=selGameId?games.find(function(x){return x.id===selGameId;}):null;document.getElementById('chatCtx').textContent=g?'Contexte : '+g.name:'Assistant retour d\'expérience';if(!chatStarted){chatStarted=true;setTimeout(function(){chatAddMsg("Bonjour ! Je suis votre assistant QLIO.\n\nJe peux analyser vos sessions, recueillir des feedbacks et générer des rapports REX.\n\nComment puis-je vous aider ?",'bot');showSugs('');},300);}}else{panel.classList.remove('open');btn.innerHTML='💬';btn.style.background='var(--accent)';btn.style.color='#fff';}}
+document.getElementById('cInput').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}});
+document.getElementById('cInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,70)+'px';});
+
+// ══ UTILS ══
+function ini(n){return(n||'??').split(' ').map(function(x){return x[0]||'';}).join('').toUpperCase().slice(0,2);}
+function fmtD(s){var d=new Date(s+'T00:00:00');return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');}
+function fmtRange(s,e){return s===e?fmtD(s)+'/'+new Date(s+'T00:00:00').getFullYear():fmtD(s)+' > '+fmtD(e);}
+function openM(id){document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+function toast(msg,err){var t=document.createElement('div');t.className='toast';t.style.background=err?'var(--red)':'var(--accent)';t.style.color='#fff';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2800);}
+document.querySelectorAll('.overlay').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});});
+
+init();
+</script>
+</body>
+</html>
